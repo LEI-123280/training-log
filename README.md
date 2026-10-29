@@ -1,4 +1,4 @@
-# GymLog PWA (Personal Training Log) 🏋️‍♂️
+# GymLog PWA (Personal Training Log)
 
 Progressive Web App (PWA) pessoal, ultrarrápida e 100% otimizada para utilização em smartphone durante os treinos no ginásio.
 
@@ -6,7 +6,7 @@ Inspirada nas melhores funcionalidades de apps como *Hevy* e *Strong*, com foco 
 
 ---
 
-## ⚡ Funcionalidades Principais
+##  Funcionalidades Principais
 
 - **Zero Fricção & Touch-First:**
   - Botões táteis com altura mínima de 44px (fáceis de premir com mãos cansadas).
