@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { BottomNav } from '@/components/layout/BottomNav';
+import { ActiveWorkoutBanner } from '@/components/layout/ActiveWorkoutBanner';
 import { ActiveWorkoutPage } from '@/pages/ActiveWorkout';
 import { RoutinesPage } from '@/pages/Routines';
 import { ExercisesPage } from '@/pages/Exercises';
 import { AnalyticsPage } from '@/pages/Analytics';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { WorkoutProvider } from '@/context/WorkoutContext';
 import { db } from '@/db';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -25,7 +27,7 @@ function getTitleForRoute(pathname: string): string {
   }
 }
 
-// Optional quick seed helper if user wants sample templates
+// Starter seed if database is brand new
 async function seedDefaultIfEmpty() {
   const count = await db.exercises.count();
   if (count === 0) {
@@ -45,7 +47,6 @@ async function seedDefaultIfEmpty() {
     ];
     await db.exercises.bulkAdd(starterExercises);
 
-    // Also seed sample Push routine
     const pushRoutineId = uuidv4();
     await db.routines.add({
       id: pushRoutineId,
@@ -92,6 +93,9 @@ function MainLayout() {
         </Routes>
       </main>
 
+      {/* Floating active workout banner when browsing other tabs */}
+      <ActiveWorkoutBanner />
+
       <BottomNav />
     </div>
   );
@@ -99,8 +103,10 @@ function MainLayout() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <MainLayout />
-    </BrowserRouter>
+    <WorkoutProvider>
+      <BrowserRouter>
+        <MainLayout />
+      </BrowserRouter>
+    </WorkoutProvider>
   );
 }

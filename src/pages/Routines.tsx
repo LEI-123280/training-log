@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Play, Edit2, Trash2, GripVertical, ListChecks, Dumbbell } from 'lucide-react';
+import { Plus, Play, Edit2, Trash2, GripVertical, ListChecks, Dumbbell, Search } from 'lucide-react';
 import { db } from '@/db';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Select } from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
-import type { Routine, RoutineExercise, Exercise } from '@/types';
+import { MUSCLE_GROUPS, EQUIPMENT_TYPES, type Routine, type RoutineExercise, type Exercise } from '@/types';
 
 export function RoutinesPage() {
   const navigate = useNavigate();
@@ -26,6 +27,13 @@ export function RoutinesPage() {
   const [form, setForm] = useState({ name: '', description: '' });
   const [routineExercises, setRoutineExercises] = useState<{ exerciseId: string; targetSets: number }[]>([]);
   const [isAddExerciseOpen, setIsAddExerciseOpen] = useState(false);
+  const [exerciseSearch, setExerciseSearch] = useState('');
+  const [isCreatingExercise, setIsCreatingExercise] = useState(false);
+  const [newExerciseForm, setNewExerciseForm] = useState({
+    name: '',
+    targetMuscle: 'Peito',
+    equipment: 'Barra',
+  });
 
   const loadData = async () => {
     const allRoutines = await db.routines.orderBy('createdAt').reverse().toArray();
@@ -67,7 +75,6 @@ export function RoutinesPage() {
         name: form.name.trim(),
         description: form.description.trim() || undefined,
       });
-      // Delete old routine exercises and re-add with new order
       await db.routineExercises.where('routineId').equals(routineId).delete();
     } else {
       await db.routines.add({
@@ -123,11 +130,34 @@ export function RoutinesPage() {
     setRoutineExercises([]);
     setIsDialogOpen(false);
     setIsAddExerciseOpen(false);
+    setIsCreatingExercise(false);
+    setExerciseSearch('');
   };
 
   const addExerciseToRoutine = (exerciseId: string) => {
     setRoutineExercises(prev => [...prev, { exerciseId, targetSets: 3 }]);
     setIsAddExerciseOpen(false);
+    setExerciseSearch('');
+  };
+
+  const handleCreateAndAddExerciseToRoutine = async () => {
+    if (!newExerciseForm.name.trim()) return;
+    const newExercise: Exercise = {
+      id: uuidv4(),
+      name: newExerciseForm.name.trim(),
+      targetMuscle: newExerciseForm.targetMuscle,
+      equipment: newExerciseForm.equipment || 'Outro',
+      createdAt: new Date(),
+    };
+    await db.exercises.add(newExercise);
+    const updated = await db.exercises.orderBy('name').toArray();
+    setAllExercises(updated);
+
+    setRoutineExercises(prev => [...prev, { exerciseId: newExercise.id, targetSets: 3 }]);
+    setNewExerciseForm({ name: '', targetMuscle: 'Peito', equipment: 'Barra' });
+    setIsCreatingExercise(false);
+    setIsAddExerciseOpen(false);
+    setExerciseSearch('');
   };
 
   const removeExerciseFromRoutine = (index: number) => {
@@ -141,6 +171,11 @@ export function RoutinesPage() {
       return next;
     });
   };
+
+  const filteredExercises = allExercises.filter(ex =>
+    ex.name.toLowerCase().includes(exerciseSearch.toLowerCase()) ||
+    ex.targetMuscle.toLowerCase().includes(exerciseSearch.toLowerCase())
+  );
 
   return (
     <div className="px-4 pb-28 pt-3 max-w-lg mx-auto">
@@ -274,7 +309,11 @@ export function RoutinesPage() {
                 <Button
                   size="sm"
                   variant="secondary"
-                  onClick={() => setIsAddExerciseOpen(true)}
+                  onClick={() => {
+                    setIsCreatingExercise(false);
+                    setExerciseSearch('');
+                    setIsAddExerciseOpen(true);
+                  }}
                   className="h-8 px-2.5 text-xs bg-zinc-800 text-zinc-200"
                 >
                   <Plus className="h-3.5 w-3.5 mr-1" />
@@ -336,45 +375,134 @@ export function RoutinesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Exercise to Routine Dialog */}
+      {/* Add / Create Exercise to Routine Dialog */}
       <Dialog open={isAddExerciseOpen} onOpenChange={setIsAddExerciseOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Selecionar Exercício</DialogTitle>
-            <DialogDescription>Escolhe da tua biblioteca para incluir na rotina.</DialogDescription>
+            <DialogTitle>
+              {isCreatingExercise ? 'Criar Novo Exercício' : 'Selecionar Exercício'}
+            </DialogTitle>
+            <DialogDescription>
+              {isCreatingExercise
+                ? 'Ficará gravado para sempre na tua biblioteca.'
+                : 'Escolhe da tua biblioteca ou cria um exercício novo.'}
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-1.5 max-h-[60vh] overflow-y-auto">
-            {allExercises.length === 0 ? (
-              <div className="text-center py-6">
-                <Dumbbell className="h-8 w-8 mx-auto mb-2 text-zinc-600" />
-                <p className="text-sm text-zinc-400">Nenhum exercício disponível na biblioteca.</p>
-                <p className="text-xs text-zinc-500 mt-1">Cria exercícios primeiro no separador "Exercícios".</p>
+
+          {isCreatingExercise ? (
+            <div className="space-y-4 py-2">
+              <div>
+                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5 block">
+                  Nome do Exercício
+                </label>
+                <Input
+                  placeholder="Ex: Leg Press 45º"
+                  value={newExerciseForm.name}
+                  onChange={e => setNewExerciseForm(f => ({ ...f, name: e.target.value }))}
+                  autoFocus
+                />
               </div>
-            ) : (
-              allExercises.map(exercise => (
-                <button
-                  key={exercise.id}
-                  onClick={() => addExerciseToRoutine(exercise.id)}
-                  className="w-full text-left p-3 rounded-xl bg-zinc-800/80 hover:bg-zinc-800 active:bg-zinc-700 transition-colors flex items-center justify-between"
+              <div>
+                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5 block">
+                  Grupo Muscular
+                </label>
+                <Select
+                  value={newExerciseForm.targetMuscle}
+                  onChange={e => setNewExerciseForm(f => ({ ...f, targetMuscle: e.target.value }))}
+                  options={MUSCLE_GROUPS.map(m => ({ value: m, label: m }))}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5 block">
+                  Equipamento
+                </label>
+                <Select
+                  value={newExerciseForm.equipment}
+                  onChange={e => setNewExerciseForm(f => ({ ...f, equipment: e.target.value }))}
+                  options={EQUIPMENT_TYPES.map(e => ({ value: e, label: e }))}
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setIsCreatingExercise(false)}
                 >
-                  <div className="min-w-0 pr-2">
-                    <p className="text-sm font-semibold text-zinc-100 truncate">{exercise.name}</p>
-                    <div className="flex gap-1.5 mt-1">
-                      <Badge variant="secondary" className="bg-zinc-900 text-zinc-400 text-[10px]">
-                        {exercise.targetMuscle}
-                      </Badge>
-                      {exercise.equipment && (
-                        <Badge variant="outline" className="border-zinc-700 text-zinc-500 text-[10px]">
-                          {exercise.equipment}
-                        </Badge>
-                      )}
-                    </div>
+                  Voltar à Lista
+                </Button>
+                <Button
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 font-bold"
+                  onClick={handleCreateAndAddExerciseToRoutine}
+                  disabled={!newExerciseForm.name.trim()}
+                >
+                  Criar e Adicionar
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                <Input
+                  placeholder="Pesquisar exercício ou músculo..."
+                  value={exerciseSearch}
+                  onChange={e => setExerciseSearch(e.target.value)}
+                  className="pl-9 bg-zinc-950"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setNewExerciseForm({
+                    name: exerciseSearch.trim(),
+                    targetMuscle: 'Peito',
+                    equipment: 'Barra',
+                  });
+                  setIsCreatingExercise(true);
+                }}
+                className="w-full p-3 rounded-xl border border-dashed border-emerald-500/50 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 flex items-center justify-center gap-2 font-semibold text-xs active:scale-[0.98] transition-all"
+              >
+                <Plus className="h-4 w-4 text-emerald-400" />
+                <span>
+                  {exerciseSearch.trim()
+                    ? `Criar exercício "${exerciseSearch.trim()}"`
+                    : '+ Criar Novo Exercício'}
+                </span>
+              </button>
+
+              <div className="space-y-1.5 max-h-[45vh] overflow-y-auto pr-0.5">
+                {filteredExercises.length === 0 ? (
+                  <div className="text-center py-6 text-zinc-500">
+                    <p className="text-xs">Nenhum exercício encontrado com esse nome.</p>
                   </div>
-                  <Plus className="h-5 w-5 text-emerald-400 flex-shrink-0" />
-                </button>
-              ))
-            )}
-          </div>
+                ) : (
+                  filteredExercises.map(exercise => (
+                    <button
+                      key={exercise.id}
+                      onClick={() => addExerciseToRoutine(exercise.id)}
+                      className="w-full text-left p-3 rounded-xl bg-zinc-800/80 hover:bg-zinc-800 active:bg-zinc-700 transition-colors flex items-center justify-between"
+                    >
+                      <div className="min-w-0 pr-2">
+                        <p className="text-sm font-semibold text-zinc-100 truncate">{exercise.name}</p>
+                        <div className="flex gap-1.5 mt-1">
+                          <Badge variant="secondary" className="bg-zinc-900 text-zinc-400 text-[10px]">
+                            {exercise.targetMuscle}
+                          </Badge>
+                          {exercise.equipment && (
+                            <Badge variant="outline" className="border-zinc-700 text-zinc-500 text-[10px]">
+                              {exercise.equipment}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <Plus className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
