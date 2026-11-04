@@ -12,9 +12,8 @@ import {
   Award,
   Trash2,
   Search,
-  Eye,
-  Calendar,
-  X,
+  Calendar as CalendarIcon,
+  List,
 } from 'lucide-react';
 import { db } from '@/db';
 import { Button } from '@/components/ui/button';
@@ -22,6 +21,8 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { MuscleSelector } from '@/components/ui/muscle-selector';
+import { WorkoutCalendar, type DetailedWorkoutSession } from '@/components/workout/WorkoutCalendar';
 import {
   Dialog,
   DialogContent,
@@ -32,7 +33,8 @@ import {
 } from '@/components/ui/dialog';
 import { ExerciseCard } from '@/components/workout/ExerciseCard';
 import { useWorkout } from '@/hooks/useWorkout';
-import { MUSCLE_GROUPS, EQUIPMENT_TYPES, type Routine, type Exercise, type WorkoutSession, type WorkoutSet } from '@/types';
+import { EQUIPMENT_TYPES, type Routine, type Exercise, type WorkoutSession, type WorkoutSet, getExerciseMuscles } from '@/types';
+import { cn } from '@/lib/utils';
 
 interface DetailedPastSession extends WorkoutSession {
   routineName?: string;
@@ -47,16 +49,21 @@ export function ActiveWorkoutPage() {
   const workout = useWorkout();
 
   const [routines, setRoutines] = useState<Routine[]>([]);
-  const [recentSessions, setRecentSessions] = useState<DetailedPastSession[]>([]);
+  const [allSessions, setAllSessions] = useState<DetailedWorkoutSession[]>([]);
   const [allExercises, setAllExercises] = useState<Exercise[]>([]);
+  const [historyView, setHistoryView] = useState<'calendar' | 'list'>('calendar');
 
   // Dialog states
   const [isAddExerciseOpen, setIsAddExerciseOpen] = useState(false);
   const [exerciseSearch, setExerciseSearch] = useState('');
   const [isCreatingExercise, setIsCreatingExercise] = useState(false);
-  const [newExerciseForm, setNewExerciseForm] = useState({
+  const [newExerciseForm, setNewExerciseForm] = useState<{
+    name: string;
+    targetMuscles: string[];
+    equipment: string;
+  }>({
     name: '',
-    targetMuscle: 'Peito',
+    targetMuscles: ['Peito'],
     equipment: 'Barra',
   });
 
@@ -73,10 +80,10 @@ export function ActiveWorkoutPage() {
     const ex = await db.exercises.orderBy('name').toArray();
     setAllExercises(ex);
 
+    // Load all historical sessions so calendar shows green dots across all months
     const sessions = await db.workoutSessions
       .orderBy('startTime')
       .reverse()
-      .limit(10)
       .toArray();
 
     const enriched = await Promise.all(
@@ -92,7 +99,7 @@ export function ActiveWorkoutPage() {
         };
       })
     );
-    setRecentSessions(enriched);
+    setAllSessions(enriched);
   };
 
   useEffect(() => {
@@ -138,26 +145,26 @@ export function ActiveWorkoutPage() {
   };
 
   const handleCreateAndAddExercise = async () => {
-    if (!newExerciseForm.name.trim()) return;
+    if (!newExerciseForm.name.trim() || newExerciseForm.targetMuscles.length === 0) return;
     await workout.createAndAddExercise(
       newExerciseForm.name,
-      newExerciseForm.targetMuscle,
+      newExerciseForm.targetMuscles,
       newExerciseForm.equipment,
       3
     );
     // Refresh exercise list
     const updated = await db.exercises.orderBy('name').toArray();
     setAllExercises(updated);
-    setNewExerciseForm({ name: '', targetMuscle: 'Peito', equipment: 'Barra' });
+    setNewExerciseForm({ name: '', targetMuscles: ['Peito'], equipment: 'Barra' });
     setIsCreatingExercise(false);
     setIsAddExerciseOpen(false);
     setExerciseSearch('');
   };
 
   // Open past workout details
-  const handleOpenPastSession = async (session: DetailedPastSession) => {
+  const handleOpenPastSession = async (session: DetailedWorkoutSession) => {
     const sets = await db.workoutSets.where('sessionId').equals(session.id).toArray();
-    
+
     // Group sets by exercise
     const exerciseMap = new Map<string, WorkoutSet[]>();
     for (const set of sets) {
@@ -171,7 +178,7 @@ export function ActiveWorkoutPage() {
         const exercise = await db.exercises.get(exerciseId) || {
           id: exerciseId,
           name: 'Exercício Desconhecido',
-          targetMuscle: 'Outro',
+          targetMuscles: ['Outro'],
           equipment: '',
           createdAt: new Date(),
         };
@@ -204,7 +211,7 @@ export function ActiveWorkoutPage() {
   // Filter exercises in add modal
   const filteredExercises = allExercises.filter(ex =>
     ex.name.toLowerCase().includes(exerciseSearch.toLowerCase()) ||
-    ex.targetMuscle.toLowerCase().includes(exerciseSearch.toLowerCase())
+    getExerciseMuscles(ex).some(m => m.toLowerCase().includes(exerciseSearch.toLowerCase()))
   );
 
   // -------------------------------------------------------------
@@ -330,22 +337,19 @@ export function ActiveWorkoutPage() {
                     Nome do Exercício
                   </label>
                   <Input
-                    placeholder="Ex: Elevação Pélvica, Supino Declinado..."
+                    placeholder="Ex: Agachamento Livre, Supino Inclinado..."
                     value={newExerciseForm.name}
                     onChange={e => setNewExerciseForm(f => ({ ...f, name: e.target.value }))}
                     autoFocus
                   />
                 </div>
-                <div>
-                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5 block">
-                    Grupo Muscular Principal
-                  </label>
-                  <Select
-                    value={newExerciseForm.targetMuscle}
-                    onChange={e => setNewExerciseForm(f => ({ ...f, targetMuscle: e.target.value }))}
-                    options={MUSCLE_GROUPS.map(m => ({ value: m, label: m }))}
-                  />
-                </div>
+
+                {/* Multi-Muscle Selector */}
+                <MuscleSelector
+                  selectedMuscles={newExerciseForm.targetMuscles}
+                  onChange={muscles => setNewExerciseForm(f => ({ ...f, targetMuscles: muscles }))}
+                />
+
                 <div>
                   <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5 block">
                     Equipamento
@@ -367,7 +371,7 @@ export function ActiveWorkoutPage() {
                   <Button
                     className="flex-1 bg-emerald-600 hover:bg-emerald-500 font-bold"
                     onClick={handleCreateAndAddExercise}
-                    disabled={!newExerciseForm.name.trim()}
+                    disabled={!newExerciseForm.name.trim() || newExerciseForm.targetMuscles.length === 0}
                   >
                     Criar e Adicionar
                   </Button>
@@ -393,7 +397,7 @@ export function ActiveWorkoutPage() {
                   onClick={() => {
                     setNewExerciseForm({
                       name: exerciseSearch.trim(),
-                      targetMuscle: 'Peito',
+                      targetMuscles: ['Peito'],
                       equipment: 'Barra',
                     });
                     setIsCreatingExercise(true);
@@ -404,7 +408,7 @@ export function ActiveWorkoutPage() {
                   <span>
                     {exerciseSearch.trim()
                       ? `Criar exercício "${exerciseSearch.trim()}"`
-                      : '+ Criar Novo Exercício (Guardar para Sempre)'}
+                      : '+ Criar Novo Exercício (Multi-Músculos)'}
                   </span>
                 </button>
 
@@ -416,33 +420,38 @@ export function ActiveWorkoutPage() {
                       <p className="text-xs text-emerald-400 mt-1">Usa o botão acima para criá-lo!</p>
                     </div>
                   ) : (
-                    filteredExercises.map(exercise => (
-                      <button
-                        key={exercise.id}
-                        type="button"
-                        onClick={() => {
-                          workout.addExerciseToWorkout(exercise.id);
-                          setIsAddExerciseOpen(false);
-                          setExerciseSearch('');
-                        }}
-                        className="w-full text-left p-3 rounded-xl bg-zinc-800/80 hover:bg-zinc-800 active:bg-zinc-700 transition-colors flex items-center justify-between"
-                      >
-                        <div className="min-w-0 pr-2">
-                          <p className="text-sm font-semibold text-zinc-100 truncate">{exercise.name}</p>
-                          <div className="flex gap-1.5 mt-1">
-                            <Badge variant="secondary" className="bg-zinc-900 text-zinc-400 text-[10px]">
-                              {exercise.targetMuscle}
-                            </Badge>
-                            {exercise.equipment && (
-                              <Badge variant="outline" className="border-zinc-700 text-zinc-500 text-[10px]">
-                                {exercise.equipment}
-                              </Badge>
-                            )}
+                    filteredExercises.map(exercise => {
+                      const muscles = getExerciseMuscles(exercise);
+                      return (
+                        <button
+                          key={exercise.id}
+                          type="button"
+                          onClick={() => {
+                            workout.addExerciseToWorkout(exercise.id);
+                            setIsAddExerciseOpen(false);
+                            setExerciseSearch('');
+                          }}
+                          className="w-full text-left p-3 rounded-xl bg-zinc-800/80 hover:bg-zinc-800 active:bg-zinc-700 transition-colors flex items-center justify-between"
+                        >
+                          <div className="min-w-0 pr-2">
+                            <p className="text-sm font-semibold text-zinc-100 truncate">{exercise.name}</p>
+                            <div className="flex gap-1.5 mt-1 flex-wrap">
+                              {muscles.map(m => (
+                                <Badge key={m} variant="secondary" className="bg-zinc-900 text-zinc-400 text-[10px]">
+                                  {m}
+                                </Badge>
+                              ))}
+                              {exercise.equipment && (
+                                <Badge variant="outline" className="border-zinc-700 text-zinc-500 text-[10px]">
+                                  {exercise.equipment}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                        <Plus className="h-5 w-5 text-emerald-400 flex-shrink-0" />
-                      </button>
-                    ))
+                          <Plus className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+                        </button>
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -467,7 +476,7 @@ export function ActiveWorkoutPage() {
                 Notas do Treino (opcional)
               </label>
               <Input
-                placeholder="Ex: Excelente pump, supino com facilidade..."
+                placeholder="Ex: Excelente pump, agachamento muito sólido..."
                 value={finishNotes}
                 onChange={e => setFinishNotes(e.target.value)}
               />
@@ -564,71 +573,118 @@ export function ActiveWorkoutPage() {
         )}
       </div>
 
-      {/* Recent Activity History (CLICKABLE WITH FULL DRILL-DOWN & DELETE) */}
-      {recentSessions.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-2.5">
-            <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-              Últimos Treinos
-            </h2>
-            <span className="text-[11px] text-zinc-500">Toca para ver detalhes</span>
-          </div>
+      {/* WORKOUT CALENDAR & HISTORY SECTION */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+            <span>Histórico de Treinos</span>
+          </h2>
 
-          <div className="space-y-2">
-            {recentSessions.map(session => (
-              <Card
-                key={session.id}
-                onClick={() => handleOpenPastSession(session)}
-                className="p-3.5 bg-zinc-900 border-zinc-800/80 hover:border-zinc-700 active:scale-[0.99] transition-all cursor-pointer"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="min-w-0 flex-1 pr-2">
-                    <p className="text-sm font-bold text-zinc-100 truncate">
-                      {session.routineName || 'Treino Livre'}
-                    </p>
-                    <p className="text-xs text-zinc-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                      <span className="text-zinc-500">
-                        {new Date(session.startTime).toLocaleDateString('pt-PT', {
-                          day: '2-digit',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </span>
-                      <span>·</span>
-                      <span className="text-zinc-300 font-semibold">{session.totalSets} séries</span>
-                      {session.tonnage > 0 && (
-                        <>
-                          <span>·</span>
-                          <span className="text-emerald-400 font-mono font-semibold">
-                            {Math.round(session.tonnage).toLocaleString('pt-PT')} kg
-                          </span>
-                        </>
-                      )}
-                    </p>
-                    {session.notes && (
-                      <p className="text-xs text-zinc-500 italic mt-1 line-clamp-1">
-                        "{session.notes}"
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <button
-                      type="button"
-                      onClick={(e) => handleDeletePastSession(session.id, e)}
-                      aria-label="Eliminar treino"
-                      className="h-9 w-9 flex items-center justify-center rounded-xl text-zinc-500 hover:text-red-400 hover:bg-red-500/10 active:scale-95 transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                    <ChevronRight className="h-4 w-4 text-zinc-600" />
-                  </div>
-                </div>
-              </Card>
-            ))}
+          {/* Toggle between Calendar and List view */}
+          <div className="flex bg-zinc-900 rounded-xl p-0.5 border border-zinc-800 text-[11px]">
+            <button
+              type="button"
+              onClick={() => setHistoryView('calendar')}
+              className={cn(
+                'px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5',
+                historyView === 'calendar'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              )}
+            >
+              <CalendarIcon className="h-3.5 w-3.5" />
+              <span>Calendário</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryView('list')}
+              className={cn(
+                'px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5',
+                historyView === 'list'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              )}
+            >
+              <List className="h-3.5 w-3.5" />
+              <span>Lista ({allSessions.length})</span>
+            </button>
           </div>
         </div>
-      )}
+
+        {/* Calendar View */}
+        {historyView === 'calendar' ? (
+          <WorkoutCalendar
+            sessions={allSessions}
+            onSelectSession={handleOpenPastSession}
+            onDeleteSession={handleDeletePastSession}
+          />
+        ) : (
+          /* List View */
+          <div className="space-y-2">
+            {allSessions.length === 0 ? (
+              <Card className="p-8 text-center bg-zinc-900 border-zinc-800">
+                <Dumbbell className="h-8 w-8 mx-auto mb-2 text-zinc-600" />
+                <p className="text-sm text-zinc-300 font-medium">Ainda sem treinos registados</p>
+                <p className="text-xs text-zinc-500 mt-1">
+                  Inicia um treino livre ou seleciona uma rotina acima.
+                </p>
+              </Card>
+            ) : (
+              allSessions.map(session => (
+                <Card
+                  key={session.id}
+                  onClick={() => handleOpenPastSession(session)}
+                  className="p-3.5 bg-zinc-900 border-zinc-800/80 hover:border-zinc-700 active:scale-[0.99] transition-all cursor-pointer"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1 pr-2">
+                      <p className="text-sm font-bold text-zinc-100 truncate">
+                        {session.routineName || 'Treino Livre'}
+                      </p>
+                      <p className="text-xs text-zinc-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                        <span className="text-zinc-500">
+                          {new Date(session.startTime).toLocaleDateString('pt-PT', {
+                            day: '2-digit',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                        <span>·</span>
+                        <span className="text-zinc-300 font-semibold">{session.totalSets} séries</span>
+                        {session.tonnage > 0 && (
+                          <>
+                            <span>·</span>
+                            <span className="text-emerald-400 font-mono font-semibold">
+                              {Math.round(session.tonnage).toLocaleString('pt-PT')} kg
+                            </span>
+                          </>
+                        )}
+                      </p>
+                      {session.notes && (
+                        <p className="text-xs text-zinc-500 italic mt-1 line-clamp-1">
+                          "{session.notes}"
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeletePastSession(session.id, e)}
+                        aria-label="Eliminar treino"
+                        className="h-9 w-9 flex items-center justify-center rounded-xl text-zinc-500 hover:text-red-400 hover:bg-red-500/10 active:scale-95 transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                      <ChevronRight className="h-4 w-4 text-zinc-600" />
+                    </div>
+                  </div>
+                </Card>
+              ))
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Past Workout Details Dialog */}
       <Dialog open={selectedPastSession !== null} onOpenChange={(open) => { if (!open) setSelectedPastSession(null); }}>
@@ -681,35 +737,42 @@ export function ActiveWorkoutPage() {
                 {selectedPastSession.exercisesWithSets?.length === 0 ? (
                   <p className="text-xs text-zinc-500 italic">Nenhuma série registada.</p>
                 ) : (
-                  selectedPastSession.exercisesWithSets?.map(({ exercise, sets }) => (
-                    <div key={exercise.id} className="bg-zinc-950/80 border border-zinc-800 rounded-xl p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-bold text-zinc-200">{exercise.name}</span>
-                        <Badge variant="secondary" className="text-[10px]">
-                          {exercise.targetMuscle}
-                        </Badge>
-                      </div>
-
-                      <div className="space-y-1">
-                        {sets.map(s => (
-                          <div
-                            key={s.id}
-                            className="flex items-center justify-between text-xs px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800/50"
-                          >
-                            <span className="font-semibold text-zinc-400">Série {s.setNumber}</span>
-                            <div className="flex items-center gap-3">
-                              <span className="font-bold text-emerald-400">{s.weightKg} kg</span>
-                              <span className="text-zinc-400">×</span>
-                              <span className="font-semibold text-zinc-200">{s.reps} reps</span>
-                              <span className="text-zinc-600 text-[10px] font-mono">
-                                ({Math.round(s.weightKg * s.reps)} kg)
-                              </span>
-                            </div>
+                  selectedPastSession.exercisesWithSets?.map(({ exercise, sets }) => {
+                    const muscles = getExerciseMuscles(exercise);
+                    return (
+                      <div key={exercise.id} className="bg-zinc-950/80 border border-zinc-800 rounded-xl p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-bold text-zinc-200">{exercise.name}</span>
+                          <div className="flex gap-1 flex-wrap">
+                            {muscles.map(m => (
+                              <Badge key={m} variant="secondary" className="text-[10px] bg-zinc-800 text-zinc-300">
+                                {m}
+                              </Badge>
+                            ))}
                           </div>
-                        ))}
+                        </div>
+
+                        <div className="space-y-1">
+                          {sets.map(s => (
+                            <div
+                              key={s.id}
+                              className="flex items-center justify-between text-xs px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800/50"
+                            >
+                              <span className="font-semibold text-zinc-400">Série {s.setNumber}</span>
+                              <div className="flex items-center gap-3">
+                                <span className="font-bold text-emerald-400">{s.weightKg} kg</span>
+                                <span className="text-zinc-400">×</span>
+                                <span className="font-semibold text-zinc-200">{s.reps} reps</span>
+                                <span className="text-zinc-600 text-[10px] font-mono">
+                                  ({Math.round(s.weightKg * s.reps)} kg)
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
 

@@ -16,7 +16,7 @@ interface WorkoutContextType {
   isActive: boolean;
   startWorkout: (routineId?: string) => Promise<string>;
   addExerciseToWorkout: (exerciseId: string, targetSets?: number) => Promise<void>;
-  createAndAddExercise: (name: string, targetMuscle: string, equipment: string, targetSets?: number) => Promise<void>;
+  createAndAddExercise: (name: string, targetMuscles: string[] | string, equipment: string, targetSets?: number) => Promise<void>;
   addSetToExercise: (exerciseIndex: number) => void;
   removeSetFromExercise: (exerciseIndex: number, setIndex: number) => void;
   updateSet: (exerciseIndex: number, setIndex: number, updates: Partial<WorkoutSet>) => void;
@@ -188,16 +188,21 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
 
   const createAndAddExercise = useCallback(async (
     name: string,
-    targetMuscle: string,
+    targetMuscles: string[] | string,
     equipment: string,
     targetSets: number = 3
   ) => {
     if (!session || !name.trim()) return;
 
+    const musclesArray = Array.isArray(targetMuscles)
+      ? targetMuscles
+      : (targetMuscles ? [targetMuscles] : ['Peito']);
+
     const newExercise: Exercise = {
       id: uuidv4(),
       name: name.trim(),
-      targetMuscle,
+      targetMuscles: musclesArray,
+      targetMuscle: musclesArray[0] || 'Peito',
       equipment: equipment || 'Outro',
       createdAt: new Date(),
     };

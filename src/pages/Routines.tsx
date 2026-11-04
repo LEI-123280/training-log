@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select } from '@/components/ui/select';
+import { MuscleSelector } from '@/components/ui/muscle-selector';
 import {
   Dialog,
   DialogContent,
@@ -16,7 +17,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { MUSCLE_GROUPS, EQUIPMENT_TYPES, type Routine, type RoutineExercise, type Exercise } from '@/types';
+import { MUSCLE_GROUPS, EQUIPMENT_TYPES, type Routine, type RoutineExercise, type Exercise, getExerciseMuscles } from '@/types';
 
 export function RoutinesPage() {
   const navigate = useNavigate();
@@ -29,9 +30,13 @@ export function RoutinesPage() {
   const [isAddExerciseOpen, setIsAddExerciseOpen] = useState(false);
   const [exerciseSearch, setExerciseSearch] = useState('');
   const [isCreatingExercise, setIsCreatingExercise] = useState(false);
-  const [newExerciseForm, setNewExerciseForm] = useState({
+  const [newExerciseForm, setNewExerciseForm] = useState<{
+    name: string;
+    targetMuscles: string[];
+    equipment: string;
+  }>({
     name: '',
-    targetMuscle: 'Peito',
+    targetMuscles: ['Peito'],
     equipment: 'Barra',
   });
 
@@ -132,6 +137,7 @@ export function RoutinesPage() {
     setIsAddExerciseOpen(false);
     setIsCreatingExercise(false);
     setExerciseSearch('');
+    setNewExerciseForm({ name: '', targetMuscles: ['Peito'], equipment: 'Barra' });
   };
 
   const addExerciseToRoutine = (exerciseId: string) => {
@@ -141,11 +147,12 @@ export function RoutinesPage() {
   };
 
   const handleCreateAndAddExerciseToRoutine = async () => {
-    if (!newExerciseForm.name.trim()) return;
+    if (!newExerciseForm.name.trim() || newExerciseForm.targetMuscles.length === 0) return;
     const newExercise: Exercise = {
       id: uuidv4(),
       name: newExerciseForm.name.trim(),
-      targetMuscle: newExerciseForm.targetMuscle,
+      targetMuscles: newExerciseForm.targetMuscles,
+      targetMuscle: newExerciseForm.targetMuscles[0] || 'Peito',
       equipment: newExerciseForm.equipment || 'Outro',
       createdAt: new Date(),
     };
@@ -154,7 +161,7 @@ export function RoutinesPage() {
     setAllExercises(updated);
 
     setRoutineExercises(prev => [...prev, { exerciseId: newExercise.id, targetSets: 3 }]);
-    setNewExerciseForm({ name: '', targetMuscle: 'Peito', equipment: 'Barra' });
+    setNewExerciseForm({ name: '', targetMuscles: ['Peito'], equipment: 'Barra' });
     setIsCreatingExercise(false);
     setIsAddExerciseOpen(false);
     setExerciseSearch('');
@@ -174,7 +181,7 @@ export function RoutinesPage() {
 
   const filteredExercises = allExercises.filter(ex =>
     ex.name.toLowerCase().includes(exerciseSearch.toLowerCase()) ||
-    ex.targetMuscle.toLowerCase().includes(exerciseSearch.toLowerCase())
+    getExerciseMuscles(ex).some(m => m.toLowerCase().includes(exerciseSearch.toLowerCase()))
   );
 
   return (
@@ -336,7 +343,9 @@ export function RoutinesPage() {
                         <GripVertical className="h-4 w-4 text-zinc-500 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-zinc-100 truncate">{exercise?.name || 'Exercício'}</p>
-                          <span className="text-[11px] text-zinc-400">{exercise?.targetMuscle}</span>
+                          <span className="text-[11px] text-zinc-400 truncate block">
+                            {getExerciseMuscles(exercise).join(', ')}
+                          </span>
                         </div>
                         <div className="flex items-center gap-1.5 bg-zinc-900 px-2 py-1 rounded-lg border border-zinc-700">
                           <input
@@ -396,22 +405,19 @@ export function RoutinesPage() {
                   Nome do Exercício
                 </label>
                 <Input
-                  placeholder="Ex: Leg Press 45º"
+                  placeholder="Ex: Leg Press 45º, Agachamento..."
                   value={newExerciseForm.name}
                   onChange={e => setNewExerciseForm(f => ({ ...f, name: e.target.value }))}
                   autoFocus
                 />
               </div>
-              <div>
-                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5 block">
-                  Grupo Muscular
-                </label>
-                <Select
-                  value={newExerciseForm.targetMuscle}
-                  onChange={e => setNewExerciseForm(f => ({ ...f, targetMuscle: e.target.value }))}
-                  options={MUSCLE_GROUPS.map(m => ({ value: m, label: m }))}
-                />
-              </div>
+
+              {/* Multi-Muscle Selector */}
+              <MuscleSelector
+                selectedMuscles={newExerciseForm.targetMuscles}
+                onChange={muscles => setNewExerciseForm(f => ({ ...f, targetMuscles: muscles }))}
+              />
+
               <div>
                 <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5 block">
                   Equipamento
@@ -433,7 +439,7 @@ export function RoutinesPage() {
                 <Button
                   className="flex-1 bg-emerald-600 hover:bg-emerald-500 font-bold"
                   onClick={handleCreateAndAddExerciseToRoutine}
-                  disabled={!newExerciseForm.name.trim()}
+                  disabled={!newExerciseForm.name.trim() || newExerciseForm.targetMuscles.length === 0}
                 >
                   Criar e Adicionar
                 </Button>
@@ -456,7 +462,7 @@ export function RoutinesPage() {
                 onClick={() => {
                   setNewExerciseForm({
                     name: exerciseSearch.trim(),
-                    targetMuscle: 'Peito',
+                    targetMuscles: ['Peito'],
                     equipment: 'Barra',
                   });
                   setIsCreatingExercise(true);
@@ -467,7 +473,7 @@ export function RoutinesPage() {
                 <span>
                   {exerciseSearch.trim()
                     ? `Criar exercício "${exerciseSearch.trim()}"`
-                    : '+ Criar Novo Exercício'}
+                    : '+ Criar Novo Exercício (Multi-Músculos)'}
                 </span>
               </button>
 
@@ -477,28 +483,33 @@ export function RoutinesPage() {
                     <p className="text-xs">Nenhum exercício encontrado com esse nome.</p>
                   </div>
                 ) : (
-                  filteredExercises.map(exercise => (
-                    <button
-                      key={exercise.id}
-                      onClick={() => addExerciseToRoutine(exercise.id)}
-                      className="w-full text-left p-3 rounded-xl bg-zinc-800/80 hover:bg-zinc-800 active:bg-zinc-700 transition-colors flex items-center justify-between"
-                    >
-                      <div className="min-w-0 pr-2">
-                        <p className="text-sm font-semibold text-zinc-100 truncate">{exercise.name}</p>
-                        <div className="flex gap-1.5 mt-1">
-                          <Badge variant="secondary" className="bg-zinc-900 text-zinc-400 text-[10px]">
-                            {exercise.targetMuscle}
-                          </Badge>
-                          {exercise.equipment && (
-                            <Badge variant="outline" className="border-zinc-700 text-zinc-500 text-[10px]">
-                              {exercise.equipment}
-                            </Badge>
-                          )}
+                  filteredExercises.map(exercise => {
+                    const muscles = getExerciseMuscles(exercise);
+                    return (
+                      <button
+                        key={exercise.id}
+                        onClick={() => addExerciseToRoutine(exercise.id)}
+                        className="w-full text-left p-3 rounded-xl bg-zinc-800/80 hover:bg-zinc-800 active:bg-zinc-700 transition-colors flex items-center justify-between"
+                      >
+                        <div className="min-w-0 pr-2">
+                          <p className="text-sm font-semibold text-zinc-100 truncate">{exercise.name}</p>
+                          <div className="flex gap-1.5 mt-1 flex-wrap">
+                            {muscles.map(m => (
+                              <Badge key={m} variant="secondary" className="bg-zinc-900 text-zinc-400 text-[10px]">
+                                {m}
+                              </Badge>
+                            ))}
+                            {exercise.equipment && (
+                              <Badge variant="outline" className="border-zinc-700 text-zinc-500 text-[10px]">
+                                {exercise.equipment}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <Plus className="h-5 w-5 text-emerald-400 flex-shrink-0" />
-                    </button>
-                  ))
+                        <Plus className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+                      </button>
+                    );
+                  })
                 )}
               </div>
             </div>

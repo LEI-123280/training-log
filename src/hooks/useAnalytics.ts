@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { db } from '@/db';
-import type { WorkoutSet, Exercise, WorkoutSession } from '@/types';
+import { type WorkoutSet, type Exercise, type WorkoutSession, getExerciseMuscles } from '@/types';
 import { startOfWeek, subWeeks, subMonths, format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
@@ -117,11 +117,13 @@ export function useAnalytics() {
       for (const set of completedSets) {
         const ex = exMap.get(set.exerciseId);
         if (!ex) continue;
-        const muscle = ex.targetMuscle;
-        const existing = muscleMap.get(muscle) || { muscle, sets: 0, volume: 0 };
-        existing.sets += 1;
-        existing.volume += (set.weightKg * set.reps);
-        muscleMap.set(muscle, existing);
+        const muscles = getExerciseMuscles(ex);
+        for (const muscle of muscles) {
+          const existing = muscleMap.get(muscle) || { muscle, sets: 0, volume: 0 };
+          existing.sets += 1;
+          existing.volume += (set.weightKg * set.reps);
+          muscleMap.set(muscle, existing);
+        }
       }
 
       setAggregatedByMuscle(

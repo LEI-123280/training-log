@@ -32,18 +32,18 @@ async function seedDefaultIfEmpty() {
   const count = await db.exercises.count();
   if (count === 0) {
     const starterExercises = [
-      { id: uuidv4(), name: 'Supino Reto com Barra', targetMuscle: 'Peito', equipment: 'Barra', createdAt: new Date() },
-      { id: uuidv4(), name: 'Supino Inclinado com Halteres', targetMuscle: 'Peito', equipment: 'Haltere', createdAt: new Date() },
-      { id: uuidv4(), name: 'Puxada na Polia Alta', targetMuscle: 'Costas', equipment: 'Cabo', createdAt: new Date() },
-      { id: uuidv4(), name: 'Remada Curvada com Barra', targetMuscle: 'Costas', equipment: 'Barra', createdAt: new Date() },
-      { id: uuidv4(), name: 'Desenvolvimento com Halteres', targetMuscle: 'Ombros', equipment: 'Haltere', createdAt: new Date() },
-      { id: uuidv4(), name: 'Elevações Laterais', targetMuscle: 'Ombros', equipment: 'Haltere', createdAt: new Date() },
-      { id: uuidv4(), name: 'Agachamento com Barra', targetMuscle: 'Quadríceps', equipment: 'Barra', createdAt: new Date() },
-      { id: uuidv4(), name: 'Leg Press 45º', targetMuscle: 'Quadríceps', equipment: 'Máquina', createdAt: new Date() },
-      { id: uuidv4(), name: 'Cadeira Flexora', targetMuscle: 'Isquiotibiais', equipment: 'Máquina', createdAt: new Date() },
-      { id: uuidv4(), name: 'Curl de Bíceps com Halteres', targetMuscle: 'Bíceps', equipment: 'Haltere', createdAt: new Date() },
-      { id: uuidv4(), name: 'Tríceps na Polia (Corda)', targetMuscle: 'Tríceps', equipment: 'Cabo', createdAt: new Date() },
-      { id: uuidv4(), name: 'Elevação de Gémeos em Pé', targetMuscle: 'Gémeos', equipment: 'Máquina', createdAt: new Date() },
+      { id: uuidv4(), name: 'Supino Reto com Barra', targetMuscle: 'Peito', targetMuscles: ['Peito', 'Tríceps', 'Ombros'], equipment: 'Barra', createdAt: new Date() },
+      { id: uuidv4(), name: 'Supino Inclinado com Halteres', targetMuscle: 'Peito', targetMuscles: ['Peito', 'Ombros', 'Tríceps'], equipment: 'Haltere', createdAt: new Date() },
+      { id: uuidv4(), name: 'Puxada na Polia Alta', targetMuscle: 'Costas', targetMuscles: ['Costas', 'Bíceps'], equipment: 'Cabo', createdAt: new Date() },
+      { id: uuidv4(), name: 'Remada Curvada com Barra', targetMuscle: 'Costas', targetMuscles: ['Costas', 'Bíceps', 'Antebraços'], equipment: 'Barra', createdAt: new Date() },
+      { id: uuidv4(), name: 'Desenvolvimento com Halteres', targetMuscle: 'Ombros', targetMuscles: ['Ombros', 'Tríceps'], equipment: 'Haltere', createdAt: new Date() },
+      { id: uuidv4(), name: 'Elevações Laterais', targetMuscle: 'Ombros', targetMuscles: ['Ombros', 'Trapézio'], equipment: 'Haltere', createdAt: new Date() },
+      { id: uuidv4(), name: 'Agachamento com Barra', targetMuscle: 'Quadríceps', targetMuscles: ['Quadríceps', 'Glúteos', 'Isquiotibiais'], equipment: 'Barra', createdAt: new Date() },
+      { id: uuidv4(), name: 'Leg Press 45º', targetMuscle: 'Quadríceps', targetMuscles: ['Quadríceps', 'Glúteos'], equipment: 'Máquina', createdAt: new Date() },
+      { id: uuidv4(), name: 'Cadeira Flexora', targetMuscle: 'Isquiotibiais', targetMuscles: ['Isquiotibiais'], equipment: 'Máquina', createdAt: new Date() },
+      { id: uuidv4(), name: 'Curl de Bíceps com Halteres', targetMuscle: 'Bíceps', targetMuscles: ['Bíceps', 'Antebraços'], equipment: 'Haltere', createdAt: new Date() },
+      { id: uuidv4(), name: 'Tríceps na Polia (Corda)', targetMuscle: 'Tríceps', targetMuscles: ['Tríceps'], equipment: 'Cabo', createdAt: new Date() },
+      { id: uuidv4(), name: 'Elevação de Gémeos em Pé', targetMuscle: 'Gémeos', targetMuscles: ['Gémeos'], equipment: 'Máquina', createdAt: new Date() },
     ];
     await db.exercises.bulkAdd(starterExercises);
 

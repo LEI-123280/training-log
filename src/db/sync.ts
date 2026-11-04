@@ -102,7 +102,7 @@ export async function syncExercises(): Promise<void> {
         exercises.map(e => ({
           id: e.id,
           name: e.name,
-          target_muscle: e.targetMuscle,
+          target_muscle: e.targetMuscle || (e.targetMuscles ? e.targetMuscles.join(', ') : 'Peito'),
           equipment: e.equipment,
           created_at: e.createdAt,
         })),

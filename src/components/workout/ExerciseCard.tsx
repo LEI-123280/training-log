@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SetRow } from './SetRow';
-import type { WorkoutSet, Exercise } from '@/types';
+import { type WorkoutSet, type Exercise, getExerciseMuscles } from '@/types';
 
 interface ExerciseCardProps {
   exercise: Exercise;
@@ -42,10 +42,12 @@ export function ExerciseCard({
       >
         <div className="flex-1 min-w-0 pr-2">
           <h3 className="text-base font-bold text-zinc-100 truncate">{exercise.name}</h3>
-          <div className="flex items-center gap-1.5 mt-1">
-            <Badge variant="secondary" className="bg-zinc-800 text-zinc-300 text-[11px]">
-              {exercise.targetMuscle}
-            </Badge>
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            {getExerciseMuscles(exercise).map(muscle => (
+              <Badge key={muscle} variant="secondary" className="bg-zinc-800 text-zinc-300 text-[11px]">
+                {muscle}
+              </Badge>
+            ))}
             {exercise.equipment && (
               <Badge variant="outline" className="border-zinc-700 text-zinc-400 text-[11px]">
                 {exercise.equipment}

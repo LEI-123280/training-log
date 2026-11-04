@@ -1,9 +1,21 @@
 export interface Exercise {
   id: string;
   name: string;
-  targetMuscle: string;
+  targetMuscle?: string; // backwards compatibility
+  targetMuscles: string[]; // multi-muscle support (e.g. ['Quadríceps', 'Glúteos'])
   equipment: string;
   createdAt: Date;
+}
+
+export function getExerciseMuscles(exercise: { targetMuscles?: string[]; targetMuscle?: string } | undefined | null): string[] {
+  if (!exercise) return [];
+  if (Array.isArray(exercise.targetMuscles) && exercise.targetMuscles.length > 0) {
+    return exercise.targetMuscles;
+  }
+  if (exercise.targetMuscle && typeof exercise.targetMuscle === 'string') {
+    return [exercise.targetMuscle];
+  }
+  return [];
 }
 
 export interface Routine {

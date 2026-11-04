@@ -18,6 +18,16 @@ export class GymLogDB extends Dexie {
       workoutSessions: 'id, routineId, startTime, syncStatus',
       workoutSets: 'id, sessionId, exerciseId, setNumber, loggedAt',
     });
+
+    this.version(2).stores({
+      exercises: 'id, name, *targetMuscles, createdAt',
+    }).upgrade(tx => {
+      return tx.table('exercises').toCollection().modify((ex: any) => {
+        if (!ex.targetMuscles || !Array.isArray(ex.targetMuscles) || ex.targetMuscles.length === 0) {
+          ex.targetMuscles = ex.targetMuscle ? [ex.targetMuscle] : ['Peito'];
+        }
+      });
+    });
   }
 }
 
