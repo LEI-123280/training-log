@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { MuscleSelector } from '@/components/ui/muscle-selector';
 import { WorkoutCalendar, type DetailedWorkoutSession } from '@/components/workout/WorkoutCalendar';
+import { WorkoutSplitIcon, getWorkoutCategory } from '@/components/workout/WorkoutSplitIcon';
 import {
   Dialog,
   DialogContent,
@@ -500,16 +501,21 @@ export function ActiveWorkoutPage() {
             <div className="py-2 space-y-4">
               <div>
                 <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2 block">
-                  Tipo de Treino (Split)
+                  Tipo de Treino (Split / Símbolo no Calendário)
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  {WORKOUT_SPLITS.map(split => {
-                    const isSelected = finishSplit === split;
+                  {[
+                    { id: 'Push Day', label: 'Push (Peito)', category: 'push' as const },
+                    { id: 'Pull Day', label: 'Pull (Costas)', category: 'pull' as const },
+                    { id: 'Leg Day', label: 'Legs (Pernas)', category: 'legs' as const },
+                    { id: 'Cardio', label: 'Cardio', category: 'cardio' as const },
+                  ].map(split => {
+                    const isSelected = finishSplit === split.id;
                     return (
                       <button
-                        key={split}
+                        key={split.id}
                         type="button"
-                        onClick={() => setFinishSplit(split)}
+                        onClick={() => setFinishSplit(split.id)}
                         className={cn(
                           'flex items-center justify-between p-3 rounded-xl border text-sm font-bold transition-all active:scale-95 min-h-[44px]',
                           isSelected
@@ -517,12 +523,35 @@ export function ActiveWorkoutPage() {
                             : 'bg-zinc-800 border-zinc-700/60 text-zinc-300 hover:bg-zinc-750 hover:text-white'
                         )}
                       >
-                        <span>{split}</span>
-                        {isSelected && <CheckCircle2 className="h-4 w-4 text-white" />}
+                        <div className="flex items-center gap-2">
+                          <WorkoutSplitIcon
+                            category={split.category}
+                            className={cn('w-4 h-4', isSelected ? 'text-white' : 'text-emerald-400')}
+                          />
+                          <span>{split.label}</span>
+                        </div>
+                        {isSelected && <CheckCircle2 className="h-4 w-4 text-white flex-shrink-0" />}
                       </button>
                     );
                   })}
                 </div>
+                {/* Optional free workout / green dot fallback */}
+                <button
+                  type="button"
+                  onClick={() => setFinishSplit('Treino Livre')}
+                  className={cn(
+                    'w-full mt-2 flex items-center justify-between p-2.5 rounded-xl border text-xs font-semibold transition-all active:scale-95',
+                    finishSplit === 'Treino Livre'
+                      ? 'bg-emerald-600/20 border-emerald-500/40 text-emerald-300'
+                      : 'bg-zinc-850/60 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <span>Treino Livre (Apenas Bolinha Verde)</span>
+                  </div>
+                  {finishSplit === 'Treino Livre' && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />}
+                </button>
               </div>
 
               <div>
@@ -693,9 +722,16 @@ export function ActiveWorkoutPage() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="min-w-0 flex-1 pr-2">
-                      <p className="text-sm font-bold text-zinc-100 truncate">
-                        {session.name || session.routineName || 'Treino Livre'}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <WorkoutSplitIcon
+                          category={getWorkoutCategory(session.name || session.routineName)}
+                          className="w-4 h-4 text-emerald-400 flex-shrink-0"
+                          dotClassName="w-2.5 h-2.5"
+                        />
+                        <p className="text-sm font-bold text-zinc-100 truncate">
+                          {session.name || session.routineName || 'Treino Livre'}
+                        </p>
+                      </div>
                       <p className="text-xs text-zinc-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
                         <span className="text-zinc-500">
                           {new Date(session.startTime).toLocaleDateString('pt-PT', {
@@ -740,8 +776,12 @@ export function ActiveWorkoutPage() {
             <div className="space-y-3 animate-card-slide">
               <DialogHeader>
                 <DialogTitle className="text-base font-bold text-zinc-50 flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
-                  {selectedPastSession.name || selectedPastSession.routineName || 'Treino Livre'}
+                  <WorkoutSplitIcon
+                    category={getWorkoutCategory(selectedPastSession.name || selectedPastSession.routineName)}
+                    className="w-4 h-4 text-emerald-400 flex-shrink-0"
+                    dotClassName="w-2.5 h-2.5"
+                  />
+                  <span>{selectedPastSession.name || selectedPastSession.routineName || 'Treino Livre'}</span>
                 </DialogTitle>
                 <DialogDescription className="capitalize">
                   {new Date(selectedPastSession.startTime).toLocaleDateString('pt-PT', {
@@ -754,6 +794,46 @@ export function ActiveWorkoutPage() {
                   })}
                 </DialogDescription>
               </DialogHeader>
+
+              {/* Category / Split selector for this past session */}
+              <div className="bg-zinc-800/40 border border-zinc-800 rounded-xl p-2.5 my-2">
+                <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+                  Símbolo no Calendário:
+                </p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {[
+                    { id: 'Push Day', label: 'Peito / Push', category: 'push' as const },
+                    { id: 'Pull Day', label: 'Costas / Pull', category: 'pull' as const },
+                    { id: 'Leg Day', label: 'Pernas / Leg', category: 'legs' as const },
+                    { id: 'Cardio', label: 'Cardio', category: 'cardio' as const },
+                    { id: 'Treino Livre', label: 'Bolinha', category: 'dot' as const },
+                  ].map(opt => {
+                    const currentCategory = getWorkoutCategory(selectedPastSession.name || selectedPastSession.routineName);
+                    const isSelected = currentCategory === opt.category;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={async () => {
+                          const newName = opt.id;
+                          await db.workoutSessions.update(selectedPastSession.id, { name: newName });
+                          setSelectedPastSession({ ...selectedPastSession, name: newName });
+                          await loadData();
+                        }}
+                        className={cn(
+                          'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border',
+                          isSelected
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs'
+                            : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-750'
+                        )}
+                      >
+                        <WorkoutSplitIcon category={opt.category} className="w-3.5 h-3.5" dotClassName="w-2 h-2" />
+                        <span>{opt.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
               {/* KPI metrics of past session */}
               <div className="grid grid-cols-2 gap-2 my-2">

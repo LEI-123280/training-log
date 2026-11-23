@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { WorkoutSession } from '@/types';
+import { WorkoutSplitIcon, getWorkoutCategory } from './WorkoutSplitIcon';
 
 export interface DetailedWorkoutSession extends WorkoutSession {
   routineName?: string;
@@ -196,18 +197,24 @@ export function WorkoutCalendar({
                 {format(day, 'd')}
               </span>
 
-              {/* Green Dot Indicator for Days with Workout */}
-              <div className="h-3 flex items-center justify-center mt-1">
+              {/* Workout Indicator: Custom Split Symbol (Pernas, Peito, Costas, Cardio) or Emerald Dot */}
+              <div className="h-3.5 flex items-center justify-center mt-0.5">
                 {hasWorkout ? (
-                  <span
+                  <div
                     className={cn(
-                      'w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] transition-transform',
-                      isSelected && 'scale-125'
+                      'flex items-center justify-center transition-transform',
+                      isSelected && 'scale-115'
                     )}
-                    title={`${daySessions.length} treino(s)`}
-                  />
+                    title={daySessions.map(s => s.name || s.routineName || 'Treino').join(', ')}
+                  >
+                    <WorkoutSplitIcon
+                      category={getWorkoutCategory(daySessions[0]?.name || daySessions[0]?.routineName)}
+                      className="w-3.5 h-3.5 text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.8)]"
+                      dotClassName="w-2 h-2"
+                    />
+                  </div>
                 ) : (
-                  <span className="w-1.5 h-1.5 opacity-0" />
+                  <span className="w-2 h-2 opacity-0" />
                 )}
               </div>
             </button>
@@ -247,6 +254,11 @@ export function WorkoutCalendar({
               >
                 <div className="min-w-0 flex-1 pr-3">
                   <div className="flex items-center gap-2">
+                    <WorkoutSplitIcon
+                      category={getWorkoutCategory(session.name || session.routineName)}
+                      className="w-4 h-4 text-emerald-400 flex-shrink-0"
+                      dotClassName="w-2.5 h-2.5"
+                    />
                     <p className="text-sm font-bold text-zinc-100 truncate">
                       {session.name || session.routineName || 'Treino Livre'}
                     </p>
