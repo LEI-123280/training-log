@@ -735,7 +735,7 @@ export function ActiveWorkoutPage() {
 
       {/* Past Workout Details Dialog with smooth entrance animation */}
       <Dialog open={selectedPastSession !== null} onOpenChange={(open) => { if (!open) setSelectedPastSession(null); }}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto animate-modal-pop">
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
           {selectedPastSession && (
             <div className="space-y-3 animate-card-slide">
               <DialogHeader>
