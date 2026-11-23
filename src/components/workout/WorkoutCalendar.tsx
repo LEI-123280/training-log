@@ -202,16 +202,21 @@ export function WorkoutCalendar({
                 {hasWorkout ? (
                   <div
                     className={cn(
-                      'flex items-center justify-center transition-transform',
+                      'flex items-center justify-center gap-1 transition-transform',
                       isSelected && 'scale-115'
                     )}
                     title={daySessions.map(s => s.name || s.routineName || 'Treino').join(', ')}
                   >
-                    <WorkoutSplitIcon
-                      category={getWorkoutCategory(daySessions[0]?.name || daySessions[0]?.routineName)}
-                      className="w-3.5 h-3.5 text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.8)]"
-                      dotClassName="w-2 h-2"
-                    />
+                    {Array.from(new Set(daySessions.map(s => getWorkoutCategory(s.name || s.routineName))))
+                      .slice(0, 2)
+                      .map((cat, i) => (
+                        <WorkoutSplitIcon
+                          key={i}
+                          category={cat}
+                          className="w-3.5 h-3.5 text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.8)]"
+                          dotClassName="w-2 h-2"
+                        />
+                      ))}
                   </div>
                 ) : (
                   <span className="w-2 h-2 opacity-0" />
