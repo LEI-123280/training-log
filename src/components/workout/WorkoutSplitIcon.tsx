@@ -3,78 +3,155 @@ import { cn } from '@/lib/utils';
 
 export type WorkoutCategory = 'push' | 'pull' | 'legs' | 'cardio' | 'dot';
 
+/**
+ * Chest / Peito Icon
+ * Inspired directly by the user's reference image:
+ * Front torso with clavicle V-notch, defined pectorals with center sternum dip,
+ * serratus / oblique lines, and abdominal center line.
+ */
 export function ChestIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2.2"
+      strokeWidth="1.7"
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
     >
-      {/* Pectoral silhouette */}
-      <path d="M4 7c2.5-2 5.5-2 8 0 2.5-2 5.5-2 8 0 0 4-1.5 7-8 10-6.5-3-8-6-8-10z" />
-      {/* Sternum / center division */}
-      <path d="M12 7.5v9.5" />
-      {/* Lower chest shelf curves */}
-      <path d="M6 12.5c1.8.8 3.8.8 6 0" />
-      <path d="M12 12.5c2.2.8 4.2.8 6 0" />
+      {/* Neck lines */}
+      <path d="M9.5 2.5 L8.5 4.5" />
+      <path d="M14.5 2.5 L15.5 4.5" />
+
+      {/* Shoulders / Traps */}
+      <path d="M8.5 4.5 C6.5 5.5 4.5 6.5 2.5 8.5" />
+      <path d="M15.5 4.5 C17.5 5.5 19.5 6.5 21.5 8.5" />
+
+      {/* Clavicle / Collarbone V-bracket */}
+      <path d="M7.5 6.5 L12 8.5 L16.5 6.5" />
+
+      {/* Signature Pectoral chest curve with sternum peak */}
+      <path d="M4.5 11.5 L5.5 13.5 C6.5 14.5 8 14.8 10 14.8 C11.2 14.8 11.7 14 12 11.5 C12.3 14 12.8 14.8 14 14.8 C16 14.8 17.5 14.5 18.5 13.5 L19.5 11.5" />
+
+      {/* Obliques / Lats / Waist contours */}
+      <path d="M4.8 14 C5.5 15.5 6.5 18 6.8 21.5" />
+      <path d="M19.2 14 C18.5 15.5 17.5 18 17.2 21.5" />
+
+      {/* Inner serratus muscle cuts */}
+      <path d="M4.8 14.8 C6.2 15.8 6.2 18.5 5.5 19.8" />
+      <path d="M19.2 14.8 C17.8 15.8 17.8 18.5 18.5 19.8" />
+
+      {/* Abdominal center line & navel */}
+      <path d="M12 17.5 V20" />
+      <path d="M12 21.5 V21.8" />
     </svg>
   );
 }
 
+/**
+ * Back / Costas Icon
+ * Inspired directly by the user's reference image:
+ * Upper back with neck, trapezius slope, deltoid accents, center spine line,
+ * dual curved scapular arches, lat sweeps down to waistband.
+ */
 export function BackIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2.2"
+      strokeWidth="1.7"
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
     >
-      {/* V-Taper latissimus & trapezius silhouette */}
-      <path d="M6 5h12l3 6c-2.5 4-5.5 7-9 10-3.5-3-6.5-6-9-10l3-6z" />
-      {/* Spine / vertebrae column */}
-      <path d="M12 5v16" />
-      {/* Lat muscle wing definitions */}
-      <path d="M12 9.5l4.5 3.5" />
-      <path d="M12 9.5l-4.5 3.5" />
+      {/* Neck lines */}
+      <path d="M10 2.5 C9.8 4 9.2 5 8.5 5.5" />
+      <path d="M14 2.5 C14.2 4 14.8 5 15.5 5.5" />
+
+      {/* Traps slope & shoulders */}
+      <path d="M8.5 5.5 C6 5.8 4 7 2.5 9" />
+      <path d="M4.5 7 C5.5 6.5 6.8 6.2 8 6.2" />
+      <path d="M15.5 5.5 C18 5.8 20 7 21.5 9" />
+      <path d="M19.5 7 C18.5 6.5 17.2 6.2 16 6.2" />
+
+      {/* Dual scapular / upper back arches */}
+      <path d="M11 9 C9.5 11 8 13 6.8 15.5" />
+      <path d="M13 9 C14.5 11 16 13 17.2 15.5" />
+
+      {/* Latissimus sweeps down to waist */}
+      <path d="M3.8 11.5 C3.8 13.5 4.5 16 6.5 18" />
+      <path d="M2.5 15.5 L4.2 14" />
+      <path d="M20.2 11.5 C20.2 13.5 19.5 16 17.5 18" />
+      <path d="M21.5 15.5 L19.8 14" />
+
+      {/* Center spine */}
+      <path d="M12 12 V18" />
+      <path d="M12 19.8 V21.2" />
+
+      {/* Lower back waistband */}
+      <path d="M6.5 18 V21.5 H17.5 V18" />
+      <path d="M9.5 19 L11 17.5" />
+      <path d="M14.5 19 L13 17.5" />
     </svg>
   );
 }
 
+/**
+ * Legs / Pernas Icon
+ * Inspired directly by the user's reference image:
+ * Muscular legs outline with underwear/groin waistband, massive quad sweep,
+ * knees, calf curve, ankles, flat feet pointing outward, and quad/calf muscle lines.
+ */
 export function LegsIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2.2"
+      strokeWidth="1.7"
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
     >
-      {/* Gym shorts waist and leg openings */}
-      <path d="M6 4h12l-1 6h-3.5l-1.5-2.5-1.5 2.5H7L6 4z" />
-      {/* Left leg (quad, knee, calf, shoe) */}
-      <path d="M8 10v5.5l-1 4.5h2.8l1-4.5V10" />
-      {/* Right leg (quad, knee, calf, shoe) */}
-      <path d="M16 10v5.5l1 4.5h-2.8l-1-4.5V10" />
+      {/* Top waistband curve */}
+      <path d="M7 3.5 C9 4 10.5 4.5 12 4.5 C13.5 4.5 15 4 17 3.5" />
+      {/* Groin underwear V-line */}
+      <path d="M9.8 3.8 C10.8 5.8 13.2 5.8 14.2 3.8" />
+
+      {/* Left leg complete outline: hip -> quad -> knee -> calf -> ankle -> flat foot -> inner leg */}
+      <path d="M7 3.5 C4.8 6.5 4.2 9.5 4.8 12.5 C5.2 14 5.8 15 5.8 16.5 C5.8 18 5.2 19 4.8 19.8 C4.5 20.3 4 20.5 3 20.5 H8.5 C8.5 18 8.8 15.5 9 13.5 C9.5 11 10.5 8 11 5.8" />
+
+      {/* Right leg complete outline: hip -> quad -> knee -> calf -> ankle -> flat foot -> inner leg */}
+      <path d="M17 3.5 C19.2 6.5 19.8 9.5 19.2 12.5 C18.8 14 18.2 15 18.2 16.5 C18.2 18 18.8 19 19.2 19.8 C19.5 20.3 20 20.5 21 20.5 H15.5 C15.5 18 15.2 15.5 15 13.5 C14.5 11 13.5 8 13 5.8" />
+
+      {/* Left quad definition slashes */}
+      <path d="M6.8 8 C7.5 9.5 8.2 11 8.2 12" />
+      <path d="M9 8.5 C8.8 10 8.5 11.5 8.5 12" />
+
+      {/* Right quad definition slashes */}
+      <path d="M17.2 8 C16.5 9.5 15.8 11 15.8 12" />
+      <path d="M15 8.5 C15.2 10 15.5 11.5 15.5 12" />
+
+      {/* Left & right calf definition lines */}
+      <path d="M6.8 16 V18" />
+      <path d="M17.2 16 V18" />
     </svg>
   );
 }
 
+/**
+ * Cardio Icon
+ * Heart with ECG pulse wave line
+ */
 export function CardioIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2.2"
+      strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
@@ -85,6 +162,9 @@ export function CardioIcon({ className = "w-3.5 h-3.5" }: { className?: string }
   );
 }
 
+/**
+ * Default Dot Icon (Bolinha)
+ */
 export function DotIcon({ className = "w-2 h-2" }: { className?: string }) {
   return (
     <span
@@ -98,7 +178,7 @@ export function DotIcon({ className = "w-2 h-2" }: { className?: string }) {
 
 export function getWorkoutCategory(nameOrRoutine?: string): WorkoutCategory {
   if (!nameOrRoutine) return 'dot';
-  const text = nameOrRoutine.toLowerCase();
+  const text = nameOrRoutine.toLowerCase().trim();
 
   // If user explicitly chose "Treino Livre" or "Sem Split" -> show dot
   if (text === 'treino livre' || text.includes('sem split') || text.includes('bolinha')) {
