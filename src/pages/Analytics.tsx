@@ -222,7 +222,7 @@ export function AnalyticsPage() {
               >
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-zinc-200">{m.muscle}</span>
-                  {m.sets >= 10 && m.sets <= 20 && (
+                  {m.sets >= 10 && m.sets <= 20 && !m.muscle.toLowerCase().includes('isquio') && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
                       Meta 10-20
                     </span>

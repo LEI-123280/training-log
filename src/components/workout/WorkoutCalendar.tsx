@@ -248,7 +248,7 @@ export function WorkoutCalendar({
                 <div className="min-w-0 flex-1 pr-3">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-bold text-zinc-100 truncate">
-                      {session.routineName || 'Treino Livre'}
+                      {session.name || session.routineName || 'Treino Livre'}
                     </p>
                     <span className="text-[11px] text-zinc-500 font-mono">
                       {format(new Date(session.startTime), 'HH:mm')}
@@ -274,18 +274,8 @@ export function WorkoutCalendar({
                   )}
                 </div>
 
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <button
-                    type="button"
-                    onClick={(e) => onDeleteSession(session.id, e)}
-                    aria-label="Eliminar treino"
-                    className="h-9 w-9 flex items-center justify-center rounded-xl text-zinc-500 hover:text-red-400 hover:bg-red-500/10 active:scale-95 transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                  <div className="h-9 w-9 flex items-center justify-center text-zinc-400">
-                    <ArrowRight className="h-4 w-4 text-emerald-400" />
-                  </div>
+                <div className="h-9 w-9 flex items-center justify-center text-zinc-400 flex-shrink-0">
+                  <ArrowRight className="h-4 w-4 text-emerald-400" />
                 </div>
               </div>
             ))}

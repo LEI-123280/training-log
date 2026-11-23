@@ -33,8 +33,18 @@ export interface RoutineExercise {
   targetSets: number;
 }
 
+export const WORKOUT_SPLITS = [
+  'Pull Day',
+  'Push Day',
+  'Leg Day',
+  'Cardio',
+] as const;
+
+export type WorkoutSplit = typeof WORKOUT_SPLITS[number];
+
 export interface WorkoutSession {
   id: string;
+  name?: string;
   routineId?: string;
   startTime: Date;
   endTime?: Date;

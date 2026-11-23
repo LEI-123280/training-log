@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/dialog';
 import { ExerciseCard } from '@/components/workout/ExerciseCard';
 import { useWorkout } from '@/hooks/useWorkout';
-import { EQUIPMENT_TYPES, type Routine, type Exercise, type WorkoutSession, type WorkoutSet, getExerciseMuscles } from '@/types';
+import { EQUIPMENT_TYPES, WORKOUT_SPLITS, type Routine, type Exercise, type WorkoutSession, type WorkoutSet, getExerciseMuscles } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface DetailedPastSession extends WorkoutSession {
@@ -69,6 +69,32 @@ export function ActiveWorkoutPage() {
 
   const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false);
   const [finishNotes, setFinishNotes] = useState('');
+  const [finishSplit, setFinishSplit] = useState<string>('Pull Day');
+
+  // Auto-suggest split when finish dialog opens
+  useEffect(() => {
+    if (isFinishDialogOpen) {
+      if (workout.session?.routineId) {
+        const routine = routines.find(r => r.id === workout.session?.routineId);
+        const nameLower = routine?.name.toLowerCase() || '';
+        if (nameLower.includes('pull')) setFinishSplit('Pull Day');
+        else if (nameLower.includes('push')) setFinishSplit('Push Day');
+        else if (nameLower.includes('leg') || nameLower.includes('perna')) setFinishSplit('Leg Day');
+        else if (nameLower.includes('cardio')) setFinishSplit('Cardio');
+        else setFinishSplit('Pull Day');
+      } else {
+        const allTargetMuscles = workout.exercises.flatMap(e => getExerciseMuscles(e));
+        const hasBackOrBiceps = allTargetMuscles.some(m => ['Costas', 'Bíceps', 'Antebraços'].includes(m));
+        const hasChestOrTriceps = allTargetMuscles.some(m => ['Peito', 'Tríceps', 'Ombros'].includes(m));
+        const hasLegs = allTargetMuscles.some(m => ['Quadríceps', 'Isquiotibiais', 'Glúteos', 'Gémeos'].includes(m));
+
+        if (hasBackOrBiceps && !hasChestOrTriceps) setFinishSplit('Pull Day');
+        else if (hasChestOrTriceps && !hasBackOrBiceps) setFinishSplit('Push Day');
+        else if (hasLegs) setFinishSplit('Leg Day');
+        else setFinishSplit('Pull Day');
+      }
+    }
+  }, [isFinishDialogOpen, workout.exercises, workout.session?.routineId, routines]);
 
   // Selected past session details modal
   const [selectedPastSession, setSelectedPastSession] = useState<DetailedPastSession | null>(null);
@@ -138,7 +164,7 @@ export function ActiveWorkoutPage() {
   );
 
   const handleFinish = async () => {
-    await workout.finishWorkout(finishNotes || undefined);
+    await workout.finishWorkout(finishNotes || undefined, finishSplit);
     setIsFinishDialogOpen(false);
     setFinishNotes('');
     await loadData();
@@ -471,15 +497,44 @@ export function ActiveWorkoutPage() {
                 Duração: <strong className="text-zinc-200">{formatElapsed(workout.elapsedTime)}</strong> · Séries completadas: <strong className="text-zinc-200">{totalCompletedSets}</strong> · Tonelagem: <strong className="text-emerald-400">{Math.round(totalVolume).toLocaleString('pt-PT')} kg</strong>
               </DialogDescription>
             </DialogHeader>
-            <div className="py-2">
-              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5 block">
-                Notas do Treino (opcional)
-              </label>
-              <Input
-                placeholder="Ex: Excelente pump, agachamento muito sólido..."
-                value={finishNotes}
-                onChange={e => setFinishNotes(e.target.value)}
-              />
+            <div className="py-2 space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2 block">
+                  Tipo de Treino (Split)
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {WORKOUT_SPLITS.map(split => {
+                    const isSelected = finishSplit === split;
+                    return (
+                      <button
+                        key={split}
+                        type="button"
+                        onClick={() => setFinishSplit(split)}
+                        className={cn(
+                          'flex items-center justify-between p-3 rounded-xl border text-sm font-bold transition-all active:scale-95 min-h-[44px]',
+                          isSelected
+                            ? 'bg-emerald-600 border-emerald-500 text-white shadow-md shadow-emerald-950/40'
+                            : 'bg-zinc-800 border-zinc-700/60 text-zinc-300 hover:bg-zinc-750 hover:text-white'
+                        )}
+                      >
+                        <span>{split}</span>
+                        {isSelected && <CheckCircle2 className="h-4 w-4 text-white" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5 block">
+                  Notas do Treino (opcional)
+                </label>
+                <Input
+                  placeholder="Ex: Excelente pump, agachamento muito sólido..."
+                  value={finishNotes}
+                  onChange={e => setFinishNotes(e.target.value)}
+                />
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsFinishDialogOpen(false)}>
@@ -639,7 +694,7 @@ export function ActiveWorkoutPage() {
                   <div className="flex items-center justify-between">
                     <div className="min-w-0 flex-1 pr-2">
                       <p className="text-sm font-bold text-zinc-100 truncate">
-                        {session.routineName || 'Treino Livre'}
+                        {session.name || session.routineName || 'Treino Livre'}
                       </p>
                       <p className="text-xs text-zinc-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
                         <span className="text-zinc-500">
@@ -667,16 +722,8 @@ export function ActiveWorkoutPage() {
                         </p>
                       )}
                     </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <button
-                        type="button"
-                        onClick={(e) => handleDeletePastSession(session.id, e)}
-                        aria-label="Eliminar treino"
-                        className="h-9 w-9 flex items-center justify-center rounded-xl text-zinc-500 hover:text-red-400 hover:bg-red-500/10 active:scale-95 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                      <ChevronRight className="h-4 w-4 text-zinc-600" />
+                    <div className="h-9 w-9 flex items-center justify-center text-zinc-500 flex-shrink-0">
+                      <ChevronRight className="h-4 w-4 text-emerald-400" />
                     </div>
                   </div>
                 </Card>
@@ -686,16 +733,17 @@ export function ActiveWorkoutPage() {
         )}
       </div>
 
-      {/* Past Workout Details Dialog */}
+      {/* Past Workout Details Dialog with smooth entrance animation */}
       <Dialog open={selectedPastSession !== null} onOpenChange={(open) => { if (!open) setSelectedPastSession(null); }}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-h-[85vh] overflow-y-auto animate-modal-pop">
           {selectedPastSession && (
-            <>
+            <div className="space-y-3 animate-card-slide">
               <DialogHeader>
-                <DialogTitle className="text-base text-zinc-50">
-                  {selectedPastSession.routineName || 'Treino Livre'}
+                <DialogTitle className="text-base font-bold text-zinc-50 flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
+                  {selectedPastSession.name || selectedPastSession.routineName || 'Treino Livre'}
                 </DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="capitalize">
                   {new Date(selectedPastSession.startTime).toLocaleDateString('pt-PT', {
                     weekday: 'long',
                     day: '2-digit',
@@ -709,11 +757,11 @@ export function ActiveWorkoutPage() {
 
               {/* KPI metrics of past session */}
               <div className="grid grid-cols-2 gap-2 my-2">
-                <div className="bg-zinc-800/80 rounded-xl p-2.5 text-center">
+                <div className="bg-zinc-800/80 rounded-xl p-2.5 text-center border border-zinc-750">
                   <p className="text-xs text-zinc-400 font-medium">Séries Concluídas</p>
                   <p className="text-lg font-bold text-zinc-100">{selectedPastSession.totalSets}</p>
                 </div>
-                <div className="bg-zinc-800/80 rounded-xl p-2.5 text-center">
+                <div className="bg-zinc-800/80 rounded-xl p-2.5 text-center border border-zinc-750">
                   <p className="text-xs text-zinc-400 font-medium">Tonelagem Total</p>
                   <p className="text-lg font-bold text-emerald-400 font-mono">
                     {Math.round(selectedPastSession.tonnage).toLocaleString('pt-PT')} kg
@@ -740,7 +788,7 @@ export function ActiveWorkoutPage() {
                   selectedPastSession.exercisesWithSets?.map(({ exercise, sets }) => {
                     const muscles = getExerciseMuscles(exercise);
                     return (
-                      <div key={exercise.id} className="bg-zinc-950/80 border border-zinc-800 rounded-xl p-3">
+                      <div key={exercise.id} className="bg-zinc-950/80 border border-zinc-800 rounded-xl p-3 shadow-xs">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm font-bold text-zinc-200">{exercise.name}</span>
                           <div className="flex gap-1 flex-wrap">
@@ -792,7 +840,7 @@ export function ActiveWorkoutPage() {
                   Fechar
                 </Button>
               </DialogFooter>
-            </>
+            </div>
           )}
         </DialogContent>
       </Dialog>

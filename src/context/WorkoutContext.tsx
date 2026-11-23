@@ -23,7 +23,7 @@ interface WorkoutContextType {
   completeSet: (exerciseIndex: number, setIndex: number, weightKg: number, reps: number) => void;
   uncompleteSet: (exerciseIndex: number, setIndex: number) => void;
   removeExercise: (exerciseIndex: number) => void;
-  finishWorkout: (notes?: string) => Promise<WorkoutSession | null>;
+  finishWorkout: (notes?: string, workoutName?: string) => Promise<WorkoutSession | null>;
   cancelWorkout: () => Promise<void>;
 }
 
@@ -314,7 +314,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     setExercises(prev => prev.filter((_, i) => i !== exerciseIndex));
   }, []);
 
-  const finishWorkout = useCallback(async (notes?: string) => {
+  const finishWorkout = useCallback(async (notes?: string, workoutName?: string) => {
     if (!session) return null;
 
     const endTime = new Date();
@@ -326,13 +326,21 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       await db.workoutSets.bulkPut(completedSets);
     }
 
+    const finalName = workoutName?.trim() || session.name || undefined;
+
     await db.workoutSessions.update(session.id, {
+      name: finalName,
       endTime,
       notes,
       syncStatus: 'pending_sync',
     });
 
-    const finishedSession: WorkoutSession = { ...session, endTime, notes };
+    const finishedSession: WorkoutSession = {
+      ...session,
+      name: finalName,
+      endTime,
+      notes,
+    };
 
     // Clear state & storage
     setSession(null);
